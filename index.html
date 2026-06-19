@@ -1,0 +1,1047 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Chantier">
+<meta name="theme-color" content="#1A1A18">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Revue de chantier</title>
+<style>
+  :root {
+    --bg: #F7F6F3;
+    --surface: #FFFFFF;
+    --surface2: #F0EFE9;
+    --border: rgba(26,26,24,0.12);
+    --border-strong: rgba(26,26,24,0.28);
+    --text: #1A1A18;
+    --text-muted: #6B6B64;
+    --text-faint: #9B9B92;
+    --accent: #1A1A18;
+    --ok-bg: #EAF4E2;
+    --ok-text: #2A6B12;
+    --ok-border: #A8D98A;
+    --nc-bg: #FDECEC;
+    --nc-text: #A32020;
+    --nc-border: #F5AAAA;
+    --amber-bg: #FEF3DA;
+    --amber-text: #7A4F0A;
+    --radius: 10px;
+    --radius-sm: 7px;
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-top: env(safe-area-inset-top, 0px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #111110;
+      --surface: #1C1C1A;
+      --surface2: #252522;
+      --border: rgba(255,255,255,0.10);
+      --border-strong: rgba(255,255,255,0.22);
+      --text: #F0EFE9;
+      --text-muted: #9B9B92;
+      --text-faint: #6B6B64;
+      --accent: #F0EFE9;
+      --ok-bg: #162D0E;
+      --ok-text: #7DD65A;
+      --ok-border: #2E5C1E;
+      --nc-bg: #2A0E0E;
+      --nc-text: #F08080;
+      --nc-border: #5C1E1E;
+      --amber-bg: #2A1E08;
+      --amber-text: #F0B855;
+    }
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { height: 100%; }
+  body {
+    font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100%;
+    font-size: 15px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* HEADER */
+  .app-header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: calc(var(--safe-top) + 12px) 16px 12px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .header-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    max-width: 700px;
+    margin: 0 auto;
+  }
+  .app-title {
+    font-size: 17px;
+    font-weight: 600;
+    letter-spacing: -.02em;
+    color: var(--text);
+  }
+  .app-subtitle {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 1px;
+  }
+  .header-badge {
+    font-size: 11px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 3px 9px;
+    color: var(--text-muted);
+  }
+
+  /* PROGRESS */
+  .progress-wrap {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 0 0;
+  }
+  .progress-track {
+    height: 2px;
+    background: var(--border);
+    max-width: 700px;
+    margin: 0 auto;
+  }
+  .progress-fill {
+    height: 100%;
+    background: var(--accent);
+    transition: width .35s ease;
+  }
+
+  /* STEP NAV */
+  .step-nav {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .step-nav::-webkit-scrollbar { display: none; }
+  .step-nav-inner {
+    display: flex;
+    gap: 0;
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 0 16px;
+  }
+  .step-nav button {
+    flex-shrink: 0;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--text-muted);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: color .15s, border-color .15s;
+  }
+  .step-nav button.active {
+    color: var(--text);
+    border-bottom-color: var(--accent);
+    font-weight: 500;
+  }
+  .step-nav button.done {
+    color: var(--ok-text);
+  }
+
+  /* CONTENT */
+  .content {
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 20px 16px calc(100px + var(--safe-bottom));
+  }
+
+  /* STEPS */
+  .step { display: none; }
+  .step.active { display: block; }
+
+  /* CARDS */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .card-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    color: var(--text-faint);
+    margin-bottom: 14px;
+  }
+
+  /* FIELDS */
+  .field { margin-bottom: 14px; }
+  .field:last-child { margin-bottom: 0; }
+  .field label {
+    display: block;
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 5px;
+    font-weight: 500;
+  }
+  .field input[type=text],
+  .field input[type=date],
+  .field input[type=number],
+  .field textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    font-size: 15px;
+    font-family: inherit;
+    background: var(--bg);
+    color: var(--text);
+    appearance: none;
+    -webkit-appearance: none;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .field input:focus,
+  .field textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(26,26,24,0.08);
+  }
+  @media (prefers-color-scheme: dark) {
+    .field input:focus, .field textarea:focus {
+      box-shadow: 0 0 0 3px rgba(240,239,233,0.08);
+    }
+  }
+  .field textarea { resize: vertical; min-height: 80px; line-height: 1.55; }
+  .field input[type=number] { -moz-appearance: textfield; }
+
+  /* GRID */
+  .g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .g3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+  .g4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  @media (max-width: 480px) {
+    .g2 { grid-template-columns: 1fr; }
+    .g3 { grid-template-columns: 1fr 1fr; }
+    .g4 { grid-template-columns: repeat(3, 1fr); }
+  }
+
+  /* CONFORM TOGGLE */
+  .conform-wrap { display: flex; gap: 8px; align-items: flex-start; }
+  .conform-toggle {
+    display: flex;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .conform-toggle button {
+    padding: 9px 11px;
+    font-size: 13px;
+    border: none;
+    cursor: pointer;
+    background: var(--bg);
+    color: var(--text-muted);
+    font-weight: 500;
+    transition: background .15s, color .15s;
+    white-space: nowrap;
+  }
+  .conform-toggle button + button {
+    border-left: 1px solid var(--border-strong);
+  }
+  .conform-toggle button.ok {
+    background: var(--ok-bg);
+    color: var(--ok-text);
+  }
+  .conform-toggle button.nok {
+    background: var(--nc-bg);
+    color: var(--nc-text);
+  }
+  .conform-comment { flex: 1; }
+  .conform-comment input {
+    width: 100%;
+    padding: 9px 11px;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    font-family: inherit;
+    background: var(--bg);
+    color: var(--text);
+  }
+  .conform-comment input:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+
+  /* SCORE */
+  .score-wrap { display: flex; align-items: center; gap: 12px; padding: 4px 0; }
+  .score-wrap input[type=range] {
+    flex: 1;
+    height: 4px;
+    accent-color: var(--accent);
+  }
+  .score-num {
+    font-size: 22px;
+    font-weight: 700;
+    min-width: 52px;
+    letter-spacing: -.03em;
+  }
+
+  /* TRANSCRIPT */
+  .transcript-area {
+    width: 100%;
+    min-height: 160px;
+    padding: 12px;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    font-family: inherit;
+    background: var(--bg);
+    color: var(--text);
+    resize: vertical;
+    line-height: 1.55;
+  }
+  .transcript-area:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+
+  /* BUTTONS */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 11px 18px;
+    border-radius: var(--radius-sm);
+    font-size: 15px;
+    font-weight: 500;
+    font-family: inherit;
+    cursor: pointer;
+    transition: opacity .15s, transform .1s;
+    border: none;
+    text-decoration: none;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn:disabled { opacity: .45; cursor: not-allowed; }
+  .btn-primary {
+    background: var(--accent);
+    color: var(--surface);
+    width: 100%;
+  }
+  .btn-secondary {
+    background: var(--surface2);
+    color: var(--text);
+    border: 1px solid var(--border-strong);
+  }
+  .btn-outline {
+    background: transparent;
+    color: var(--text);
+    border: 1px solid var(--border-strong);
+  }
+
+  /* BOTTOM BAR */
+  .bottom-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    padding: 12px 16px calc(12px + var(--safe-bottom));
+    z-index: 100;
+  }
+  .bottom-bar-inner {
+    max-width: 700px;
+    margin: 0 auto;
+    display: flex;
+    gap: 8px;
+  }
+
+  /* MODE PILLS */
+  .mode-pills {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 16px;
+  }
+  .mode-pill {
+    flex: 1;
+    padding: 10px 12px;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    background: var(--surface2);
+    color: var(--text-muted);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    text-align: center;
+    transition: all .15s;
+    font-family: inherit;
+  }
+  .mode-pill.active {
+    background: var(--accent);
+    color: var(--surface);
+    border-color: var(--accent);
+  }
+
+  /* BANNER */
+  .banner {
+    border-radius: var(--radius-sm);
+    padding: 11px 14px;
+    font-size: 14px;
+    margin-bottom: 14px;
+    display: none;
+  }
+  .banner.ok { background: var(--ok-bg); color: var(--ok-text); border: 1px solid var(--ok-border); }
+  .banner.warn { background: var(--amber-bg); color: var(--amber-text); border: 1px solid var(--border); }
+  .banner.err { background: var(--nc-bg); color: var(--nc-text); border: 1px solid var(--nc-border); }
+  .banner.show { display: block; }
+
+  /* OUTPUT */
+  .output-text {
+    white-space: pre-wrap;
+    font-size: 14px;
+    line-height: 1.75;
+    color: var(--text);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 16px;
+    margin: 14px 0;
+    font-family: 'Menlo', 'Courier New', monospace;
+    min-height: 120px;
+  }
+  .btn-row { display: flex; gap: 8px; }
+  .btn-row .btn { flex: 1; }
+
+  /* API KEY */
+  .apikey-hint {
+    font-size: 12px;
+    color: var(--text-faint);
+    margin-top: 6px;
+    line-height: 1.5;
+  }
+  .apikey-hint a { color: var(--text-muted); }
+
+  /* SPINNER */
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spin { display: inline-block; animation: spin .8s linear infinite; }
+
+  /* EMPTY STATE */
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-faint);
+  }
+  .empty-icon { font-size: 36px; margin-bottom: 10px; }
+  .empty-state p { font-size: 14px; line-height: 1.6; }
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="header-inner">
+    <div>
+      <div class="app-title">Revue de chantier</div>
+      <div class="app-subtitle" id="chantier-label">Nouveau chantier</div>
+    </div>
+    <span class="header-badge" id="step-indicator">1 / 7</span>
+  </div>
+</header>
+
+<div class="progress-wrap">
+  <div class="progress-track">
+    <div class="progress-fill" id="progress" style="width:14%"></div>
+  </div>
+</div>
+
+<nav class="step-nav" aria-label="Sections">
+  <div class="step-nav-inner" id="step-nav">
+    <button class="active" onclick="goStep(0)">Saisie</button>
+    <button onclick="goStep(1)">Projet</button>
+    <button onclick="goStep(2)">Équipe</button>
+    <button onclick="goStep(3)">SST</button>
+    <button onclick="goStep(4)">Budget</button>
+    <button onclick="goStep(5)">Qualité</button>
+    <button onclick="goStep(6)">Compte-rendu</button>
+  </div>
+</nav>
+
+<main class="content">
+
+  <!-- STEP 0 : MODE DE SAISIE -->
+  <div id="step0" class="step active">
+    <div class="card">
+      <div class="card-label">Mode de saisie</div>
+      <div class="mode-pills">
+        <button class="mode-pill active" id="pill-manual" onclick="switchMode('manual')">✏️ Manuel</button>
+        <button class="mode-pill" id="pill-transcript" onclick="switchMode('transcript')">🎙 Transcription</button>
+      </div>
+
+      <div id="panel-manual">
+        <div class="banner warn show">Navigue section par section. Les champs <strong>Conforme / NC</strong> ont toujours un commentaire associé.</div>
+        <div class="field">
+          <label>Clé API Anthropic (requise pour générer le compte-rendu)</label>
+          <input type="password" id="api-key" placeholder="sk-ant-…" autocomplete="off">
+          <p class="apikey-hint">Ta clé est stockée localement et n'est jamais envoyée ailleurs qu'à l'API Anthropic. <a href="https://console.anthropic.com/keys" target="_blank">Obtenir une clé →</a></p>
+        </div>
+      </div>
+
+      <div id="panel-transcript" style="display:none">
+        <div class="field">
+          <label>Clé API Anthropic</label>
+          <input type="password" id="api-key-t" placeholder="sk-ant-…" autocomplete="off">
+          <p class="apikey-hint"><a href="https://console.anthropic.com/keys" target="_blank">Obtenir une clé →</a></p>
+        </div>
+        <div class="field">
+          <label>Transcription du meeting (Otter.ai, Whisper, texte brut…)</label>
+          <textarea class="transcript-area" id="transcript-input" placeholder="[00:00] Chargé de projet : On commence. Chantier Dupont, semaine 24…&#10;[00:15] Contremaître : On a 6 hommes aujourd'hui, il nous en faudrait 8…"></textarea>
+        </div>
+        <div id="extract-banner" class="banner"></div>
+        <button class="btn btn-primary" onclick="extractFromTranscript()" id="btn-extract">✦ Extraire et pré-remplir</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 1 : PROJET -->
+  <div id="step1" class="step">
+    <div class="card">
+      <div class="card-label">Identification</div>
+      <div class="g2">
+        <div class="field"><label>Numéro de chantier</label><input type="text" id="proj_num" placeholder="CH-2024-042"></div>
+        <div class="field"><label>Date de la revue</label><input type="date" id="proj_date"></div>
+      </div>
+      <div class="field"><label>Nom du chantier</label><input type="text" id="proj_nom" placeholder="ex. Rénovation façade — Bâtiment A"></div>
+      <div class="field"><label>Adresse du projet</label><input type="text" id="proj_adresse"></div>
+      <div class="g2">
+        <div class="field"><label>Contremaître</label><input type="text" id="proj_cm"></div>
+        <div class="field"><label>Chargé de projet</label><input type="text" id="proj_cp"></div>
+      </div>
+      <div class="g2">
+        <div class="field"><label>Début du chantier</label><input type="date" id="proj_debut"></div>
+        <div class="field"><label>Fin prévue</label><input type="date" id="proj_fin"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 2 : ÉQUIPE -->
+  <div id="step2" class="step">
+    <div class="card">
+      <div class="card-label">Effectifs présents</div>
+      <div class="field">
+        <label>Main-d'œuvre réelle vs requise</label>
+        <div class="conform-wrap">
+          <div class="conform-toggle" id="tog_main_dispo">
+            <button onclick="tog('tog_main_dispo','C',this)">✓</button>
+            <button onclick="tog('tog_main_dispo','NC',this)">✗ NC</button>
+          </div>
+          <div class="conform-comment"><input type="text" id="com_main_dispo" placeholder="Réel : ___ / Requis : ___"></div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-label">Prévisions P3S — semaine prochaine</div>
+      <div class="g4">
+        <div class="field"><label>Poseurs</label><input type="number" id="p3s_poseur" min="0" placeholder="0"></div>
+        <div class="field"><label>Manœuvres</label><input type="number" id="p3s_man" min="0" placeholder="0"></div>
+        <div class="field"><label>Cordistes</label><input type="number" id="p3s_cord" min="0" placeholder="0"></div>
+        <div class="field"><label>Électriciens</label><input type="number" id="p3s_elec" min="0" placeholder="0"></div>
+        <div class="field"><label>Soudeurs</label><input type="number" id="p3s_soud" min="0" placeholder="0"></div>
+        <div class="field"><label>Impact</label><input type="number" id="p3s_impact" min="0" placeholder="0"></div>
+        <div class="field"><label>BCAM</label><input type="number" id="p3s_bcam" min="0" placeholder="0"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-label">Sous-traitants & relations</div>
+      <div class="field">
+        <label>Sous-traitants / interco planifiés</label>
+        <div class="conform-wrap">
+          <div class="conform-toggle" id="tog_st">
+            <button onclick="tog('tog_st','C',this)">✓</button>
+            <button onclick="tog('tog_st','NC',this)">✗ NC</button>
+          </div>
+          <div class="conform-comment"><input type="text" id="com_st" placeholder="Qui, quand, pourquoi…"></div>
+        </div>
+      </div>
+      <div class="field"><label>Évaluation des relations (client, professionnel, sous-traitants)</label><textarea id="eval_relations" placeholder="Ambiance générale, tensions, points positifs…"></textarea></div>
+    </div>
+  </div>
+
+  <!-- STEP 3 : SST -->
+  <div id="step3" class="step">
+    <div class="card">
+      <div class="card-label">Santé, sécurité & travail</div>
+      <div class="field">
+        <label>Incidents / conditions dangereuses / équipements</label>
+        <div class="conform-wrap">
+          <div class="conform-toggle" id="tog_sst_enjeux">
+            <button onclick="tog('tog_sst_enjeux','C',this)">✓</button>
+            <button onclick="tog('tog_sst_enjeux','NC',this)">✗ NC</button>
+          </div>
+          <div class="conform-comment"><input type="text" id="com_sst_enjeux" placeholder="Décrire si NC…"></div>
+        </div>
+      </div>
+      <div class="g2">
+        <div class="field"><label>Dernière pause CSST</label><input type="date" id="sst_csst_date"></div>
+        <div class="field"><label>Visite CNESST / Gestess</label><input type="text" id="sst_cnesst" placeholder="Dérogation, action corrective…"></div>
+      </div>
+      <div class="field">
+        <label>Météo prévue — impact sur les travaux</label>
+        <div class="conform-wrap">
+          <div class="conform-toggle" id="tog_meteo">
+            <button onclick="tog('tog_meteo','C',this)">✓</button>
+            <button onclick="tog('tog_meteo','NC',this)">✗ NC</button>
+          </div>
+          <div class="conform-comment"><input type="text" id="com_meteo" placeholder="Conditions, plan de match…"></div>
+        </div>
+      </div>
+      <div class="field">
+        <label>Attestations / plans d'ingénieur / étaiement</label>
+        <div class="conform-wrap">
+          <div class="conform-toggle" id="tog_attestation">
+            <button onclick="tog('tog_attestation','C',this)">✓</button>
+            <button onclick="tog('tog_attestation','NC',this)">✗ NC</button>
+          </div>
+          <div class="conform-comment"><input type="text" id="com_attestation" placeholder="Documents manquants…"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 4 : BUDGET -->
+  <div id="step4" class="step">
+    <div class="card">
+      <div class="card-label">Productivité & budget</div>
+      <div class="field">
+        <label>Productivité des tâches vs budget</label>
+        <div class="conform-wrap">
+          <div class="conform-toggle" id="tog_prod">
+            <button onclick="tog('tog_prod','C',this)">✓</button>
+            <button onclick="tog('tog_prod','NC',this)">✗ NC</button>
+          </div>
+          <div class="conform-comment"><input type="text" id="com_prod" placeholder="Actuel : ___ h / Budget : ___ h"></div>
+        </div>
+      </div>
+      <div class="field">
+        <label>Budget heures restant vs requis pour compléter</label>
+        <div class="conform-wrap">
+          <div class="conform-toggle" id="tog_budget_h">
+            <button onclick="tog('tog_budget_h','C',this)">✓</button>
+            <button onclick="tog('tog_budget_h','NC',this)">✗ NC</button>
+          </div>
+          <div class="conform-comment"><input type="text" id="com_budget_h" placeholder="Déficit ou gain estimé…"></div>
+        </div>
+      </div>
+      <div class="field">
+        <label>Extras / travaux supplémentaires</label>
+        <div class="conform-wrap">
+          <div class="conform-toggle" id="tog_extra">
+            <button onclick="tog('tog_extra','C',this)">✓</button>
+            <button onclick="tog('tog_extra','NC',this)">✗ NC</button>
+          </div>
+          <div class="conform-comment"><input type="text" id="com_extra" placeholder="Nature, valeur estimée…"></div>
+        </div>
+      </div>
+      <div class="field">
+        <label>Objectif atteint depuis la dernière visite</label>
+        <div class="conform-wrap">
+          <div class="conform-toggle" id="tog_obj_atteint">
+            <button onclick="tog('tog_obj_atteint','C',this)">✓</button>
+            <button onclick="tog('tog_obj_atteint','NC',this)">✗ NC</button>
+          </div>
+          <div class="conform-comment"><input type="text" id="com_obj_atteint" placeholder="Fait / pas fait…"></div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-label">Planification P3S — 3 semaines</div>
+      <div class="g3">
+        <div class="field"><label>Semaine 1</label><textarea id="p3s_s1" placeholder="Travaux prévus…" style="min-height:70px"></textarea></div>
+        <div class="field"><label>Semaine 2</label><textarea id="p3s_s2" placeholder="Travaux prévus…" style="min-height:70px"></textarea></div>
+        <div class="field"><label>Semaine 3</label><textarea id="p3s_s3" placeholder="Travaux prévus…" style="min-height:70px"></textarea></div>
+      </div>
+      <div class="field"><label>Blocages / enjeux à venir</label><textarea id="blocages" placeholder="Matériaux, accès, sous-traitants…"></textarea></div>
+      <div class="field"><label>Objectif pour la prochaine visite</label><textarea id="obj_prochain" placeholder="Ce qui doit être complété d'ici la prochaine revue…"></textarea></div>
+    </div>
+  </div>
+
+  <!-- STEP 5 : QUALITÉ -->
+  <div id="step5" class="step">
+    <div class="card">
+      <div class="card-label">Qualité générale</div>
+      <div class="field">
+        <label>Score qualité des travaux (interne + sous-traitants)</label>
+        <div class="score-wrap">
+          <input type="range" min="0" max="10" step="1" value="7" id="score_qualite"
+            oninput="document.getElementById('score_val').textContent=this.value+'/10'">
+          <span class="score-num" id="score_val">7/10</span>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-label">Suivi technique</div>
+      <div class="field">
+        <label>Gestion des TQC</label>
+        <div class="conform-wrap">
+          <div class="conform-toggle" id="tog_tqc">
+            <button onclick="tog('tog_tqc','C',this)">✓</button>
+            <button onclick="tog('tog_tqc','NC',this)">✗ NC</button>
+          </div>
+          <div class="conform-comment"><input type="text" id="com_tqc" placeholder="Points ouverts, actions requises…"></div>
+        </div>
+      </div>
+      <div class="field">
+        <label>Gestion des déficiences</label>
+        <div class="conform-wrap">
+          <div class="conform-toggle" id="tog_defic">
+            <button onclick="tog('tog_defic','C',this)">✓</button>
+            <button onclick="tog('tog_defic','NC',this)">✗ NC</button>
+          </div>
+          <div class="conform-comment"><input type="text" id="com_defic" placeholder="Corrections en cours…"></div>
+        </div>
+      </div>
+      <div class="field">
+        <label>Bons de commande / matériaux critiques</label>
+        <div class="conform-wrap">
+          <div class="conform-toggle" id="tog_bo">
+            <button onclick="tog('tog_bo','C',this)">✓</button>
+            <button onclick="tog('tog_bo','NC',this)">✗ NC</button>
+          </div>
+          <div class="conform-comment"><input type="text" id="com_bo" placeholder="Commandes en attente, délais…"></div>
+        </div>
+      </div>
+      <div class="field">
+        <label>Locations en cours (à retourner)</label>
+        <div class="conform-wrap">
+          <div class="conform-toggle" id="tog_loc">
+            <button onclick="tog('tog_loc','C',this)">✓</button>
+            <button onclick="tog('tog_loc','NC',this)">✗ NC</button>
+          </div>
+          <div class="conform-comment"><input type="text" id="com_loc" placeholder="Équipements, dates de retour…"></div>
+        </div>
+      </div>
+      <div class="field">
+        <label>Rapports journaliers + photos dans Dreveen</label>
+        <div class="conform-wrap">
+          <div class="conform-toggle" id="tog_dreveen">
+            <button onclick="tog('tog_dreveen','C',this)">✓</button>
+            <button onclick="tog('tog_dreveen','NC',this)">✗ NC</button>
+          </div>
+          <div class="conform-comment"><input type="text" id="com_dreveen" placeholder="Retard de saisie, T&M à valider…"></div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-label">Conclusion</div>
+      <div class="field"><label>Questions du contremaître</label><textarea id="cm_questions" placeholder="Ce que le CM veut remonter…"></textarea></div>
+      <div class="field"><label>Points importants à remonter aux directeurs</label><textarea id="points_directeurs" placeholder="Enjeux critiques, risques, opportunités…"></textarea></div>
+    </div>
+  </div>
+
+  <!-- STEP 6 : COMPTE-RENDU -->
+  <div id="step6" class="step">
+    <div class="card">
+      <div class="card-label">Génération du compte-rendu</div>
+      <div id="gen-banner" class="banner"></div>
+      <button class="btn btn-primary" onclick="generateReport()" id="btn-gen">✦ Générer avec Claude</button>
+      <div id="output-area" style="display:none; margin-top:14px">
+        <div class="output-text" id="output-text"></div>
+        <div class="btn-row">
+          <button class="btn btn-outline" onclick="copyReport()">Copier</button>
+          <button class="btn btn-outline" onclick="downloadReport()">Télécharger .txt</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- BOTTOM BAR -->
+<div class="bottom-bar">
+  <div class="bottom-bar-inner" id="bottom-bar-btns">
+    <button class="btn btn-secondary" id="btn-back" onclick="goStep(currentStep-1)" style="display:none">← Retour</button>
+    <button class="btn btn-primary" id="btn-next" onclick="goStep(currentStep+1)">Continuer →</button>
+  </div>
+</div>
+
+<script>
+const STEPS = 7;
+let currentStep = 0;
+const toggleState = {};
+
+function goStep(n) {
+  if (n < 0 || n >= STEPS) return;
+  document.getElementById('step' + currentStep).classList.remove('active');
+  currentStep = n;
+  document.getElementById('step' + n).classList.add('active');
+
+  const navBtns = document.querySelectorAll('.step-nav button');
+  navBtns.forEach((b, i) => b.classList.toggle('active', i === n));
+
+  document.getElementById('progress').style.width = ((n + 1) / STEPS * 100) + '%';
+  document.getElementById('step-indicator').textContent = (n + 1) + ' / ' + STEPS;
+
+  document.getElementById('btn-back').style.display = n > 0 ? '' : 'none';
+  document.getElementById('btn-next').style.display = n < STEPS - 1 ? '' : 'none';
+
+  const nom = document.getElementById('proj_nom') ? document.getElementById('proj_nom').value.trim() : '';
+  document.getElementById('chantier-label').textContent = nom || 'Nouveau chantier';
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  const nav = document.querySelector('.step-nav');
+  const activeBtn = navBtns[n];
+  if (activeBtn) activeBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+}
+
+function tog(id, val, btn) {
+  toggleState[id] = val;
+  const wrap = document.getElementById(id);
+  wrap.querySelectorAll('button').forEach(b => b.className = '');
+  btn.className = val === 'C' ? 'ok' : 'nok';
+}
+
+function applyTog(id, val) {
+  if (!val) return;
+  toggleState[id] = val;
+  const wrap = document.getElementById(id);
+  if (!wrap) return;
+  const btns = wrap.querySelectorAll('button');
+  btns.forEach(b => b.className = '');
+  if (val === 'C') btns[0].className = 'ok';
+  else if (val === 'NC') btns[1].className = 'nok';
+}
+
+function setF(id, val) {
+  const el = document.getElementById(id);
+  if (el && val !== undefined && val !== null && String(val).trim() !== '') el.value = val;
+}
+
+function getF(id) {
+  const el = document.getElementById(id);
+  return el ? el.value.trim() : '';
+}
+
+function getKey() {
+  const k1 = getF('api-key');
+  const k2 = getF('api-key-t');
+  return k1 || k2 || localStorage.getItem('anthropic-key') || '';
+}
+
+function saveKey() {
+  const k = getKey();
+  if (k) localStorage.setItem('anthropic-key', k);
+}
+
+function switchMode(mode) {
+  document.getElementById('panel-manual').style.display = mode === 'manual' ? '' : 'none';
+  document.getElementById('panel-transcript').style.display = mode === 'transcript' ? '' : 'none';
+  document.getElementById('pill-manual').classList.toggle('active', mode === 'manual');
+  document.getElementById('pill-transcript').classList.toggle('active', mode === 'transcript');
+}
+
+function showBanner(id, type, msg) {
+  const el = document.getElementById(id);
+  el.className = 'banner ' + type + ' show';
+  el.textContent = msg;
+}
+function hideBanner(id) {
+  document.getElementById(id).className = 'banner';
+}
+
+async function callClaude(system, userMsg) {
+  const key = getKey();
+  if (!key) throw new Error('Clé API manquante — entre ta clé à l\'étape 1.');
+  saveKey();
+  const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': key,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 2000,
+      system,
+      messages: [{ role: 'user', content: userMsg }]
+    })
+  });
+  const data = await resp.json();
+  if (data.error) throw new Error(data.error.message);
+  return data.content.filter(b => b.type === 'text').map(b => b.text).join('');
+}
+
+async function extractFromTranscript() {
+  const transcript = getF('transcript-input');
+  if (!transcript) { showBanner('extract-banner', 'err', 'Colle d\'abord une transcription.'); return; }
+  const btn = document.getElementById('btn-extract');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin">↻</span> Extraction en cours…';
+  hideBanner('extract-banner');
+
+  const system = `Tu es un assistant spécialisé en gestion de chantiers de construction au Québec.
+À partir d'une transcription de réunion de chantier, tu extrais les données structurées.
+Réponds UNIQUEMENT en JSON valide, sans backticks, sans texte avant ou après.
+Structure exacte requise (laisse "" si absent, ne génère jamais de valeur inventée) :
+{"proj_num":"","proj_nom":"","proj_adresse":"","proj_date":"","proj_debut":"","proj_fin":"","proj_cm":"","proj_cp":"","tog_main_dispo":"","com_main_dispo":"","p3s_poseur":"","p3s_man":"","p3s_cord":"","p3s_elec":"","p3s_soud":"","p3s_impact":"","p3s_bcam":"","tog_st":"","com_st":"","eval_relations":"","tog_sst_enjeux":"","com_sst_enjeux":"","sst_csst_date":"","sst_cnesst":"","tog_meteo":"","com_meteo":"","tog_attestation":"","com_attestation":"","tog_prod":"","com_prod":"","tog_budget_h":"","com_budget_h":"","tog_extra":"","com_extra":"","tog_obj_atteint":"","com_obj_atteint":"","p3s_s1":"","p3s_s2":"","p3s_s3":"","blocages":"","obj_prochain":"","score_qualite":"","tog_tqc":"","com_tqc":"","tog_defic":"","com_defic":"","tog_bo":"","com_bo":"","tog_loc":"","com_loc":"","tog_dreveen":"","com_dreveen":"","cm_questions":"","points_directeurs":""}
+Règles : tog_* = "C" ou "NC" ou "". Dates = YYYY-MM-DD. score_qualite = entier 0-10 ou "".`;
+
+  try {
+    const raw = await callClaude(system, 'Transcription :\n\n' + transcript + '\n\nExtrait le JSON.');
+    const clean = raw.replace(/```json|```/g, '').trim();
+    const d = JSON.parse(clean);
+
+    ['proj_num','proj_nom','proj_adresse','proj_date','proj_debut','proj_fin','proj_cm','proj_cp',
+     'com_main_dispo','p3s_poseur','p3s_man','p3s_cord','p3s_elec','p3s_soud','p3s_impact','p3s_bcam',
+     'com_st','eval_relations','com_sst_enjeux','sst_csst_date','sst_cnesst','com_meteo','com_attestation',
+     'com_prod','com_budget_h','com_extra','com_obj_atteint','p3s_s1','p3s_s2','p3s_s3','blocages',
+     'obj_prochain','com_tqc','com_defic','com_bo','com_loc','com_dreveen','cm_questions','points_directeurs'
+    ].forEach(f => setF(f, d[f]));
+
+    ['tog_main_dispo','tog_st','tog_sst_enjeux','tog_meteo','tog_attestation','tog_prod','tog_budget_h',
+     'tog_extra','tog_obj_atteint','tog_tqc','tog_defic','tog_bo','tog_loc','tog_dreveen'
+    ].forEach(t => applyTog(t, d[t]));
+
+    if (d.score_qualite) {
+      const s = document.getElementById('score_qualite');
+      if (s) { s.value = d.score_qualite; document.getElementById('score_val').textContent = d.score_qualite + '/10'; }
+    }
+
+    showBanner('extract-banner', 'ok', '✓ Formulaire pré-rempli. Vérifie les sections avant de générer.');
+    btn.innerHTML = '✦ Ré-extraire';
+    btn.disabled = false;
+    setTimeout(() => goStep(1), 1400);
+  } catch(e) {
+    showBanner('extract-banner', 'err', 'Erreur : ' + e.message);
+    btn.innerHTML = '✦ Extraire et pré-remplir';
+    btn.disabled = false;
+  }
+}
+
+function buildContext() {
+  return `REVUE DE CHANTIER
+
+IDENTIFICATION
+Numéro : ${getF('proj_num')} | Nom : ${getF('proj_nom')} | Adresse : ${getF('proj_adresse')}
+Date revue : ${getF('proj_date')} | Début : ${getF('proj_debut')} | Fin prévue : ${getF('proj_fin')}
+Contremaître : ${getF('proj_cm')} | Chargé de projet : ${getF('proj_cp')}
+
+CAPITAL HUMAIN
+Main-d'œuvre : ${toggleState['tog_main_dispo']||''} — ${getF('com_main_dispo')}
+P3S : Poseurs=${getF('p3s_poseur')} Manœuvres=${getF('p3s_man')} Cordistes=${getF('p3s_cord')} Électriciens=${getF('p3s_elec')} Soudeurs=${getF('p3s_soud')} Impact=${getF('p3s_impact')} BCAM=${getF('p3s_bcam')}
+Sous-traitants : ${toggleState['tog_st']||''} — ${getF('com_st')}
+Relations : ${getF('eval_relations')}
+
+SST
+Incidents/sécurité : ${toggleState['tog_sst_enjeux']||''} — ${getF('com_sst_enjeux')}
+Pause CSST : ${getF('sst_csst_date')} | CNESST : ${getF('sst_cnesst')}
+Météo : ${toggleState['tog_meteo']||''} — ${getF('com_meteo')}
+Attestations : ${toggleState['tog_attestation']||''} — ${getF('com_attestation')}
+
+PRODUCTIVITÉ & BUDGET
+Productivité : ${toggleState['tog_prod']||''} — ${getF('com_prod')}
+Budget heures : ${toggleState['tog_budget_h']||''} — ${getF('com_budget_h')}
+Extras : ${toggleState['tog_extra']||''} — ${getF('com_extra')}
+Objectif atteint : ${toggleState['tog_obj_atteint']||''} — ${getF('com_obj_atteint')}
+P3S S1 : ${getF('p3s_s1')} | S2 : ${getF('p3s_s2')} | S3 : ${getF('p3s_s3')}
+Blocages : ${getF('blocages')}
+Objectif prochaine visite : ${getF('obj_prochain')}
+
+QUALITÉ & TECHNIQUE
+Score : ${document.getElementById('score_qualite').value}/10
+TQC : ${toggleState['tog_tqc']||''} — ${getF('com_tqc')}
+Déficiences : ${toggleState['tog_defic']||''} — ${getF('com_defic')}
+Bons de commande : ${toggleState['tog_bo']||''} — ${getF('com_bo')}
+Locations : ${toggleState['tog_loc']||''} — ${getF('com_loc')}
+Dreveen : ${toggleState['tog_dreveen']||''} — ${getF('com_dreveen')}
+
+CONCLUSION
+Questions CM : ${getF('cm_questions')}
+Points directeurs : ${getF('points_directeurs')}`;
+}
+
+async function generateReport() {
+  const btn = document.getElementById('btn-gen');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin">↻</span> Génération…';
+  hideBanner('gen-banner');
+  document.getElementById('output-area').style.display = 'none';
+
+  const system = `Tu es un assistant spécialisé en gestion de chantiers de construction au Québec.
+Tu génères des comptes-rendus de revue de chantier clairs, structurés et actionnables.
+
+Structure obligatoire :
+1. EN-TÊTE (projet, date, participants)
+2. POINTS NON-CONFORMES (NC uniquement — action corrective + responsable pour chacun)
+3. ÉTAT DU CHANTIER (avancement, budget, qualité)
+4. EFFECTIFS & SOUS-TRAITANTS (situation actuelle + prévisions P3S)
+5. SST — ENJEUX (si NC ou enjeux relevés seulement)
+6. PLANIFICATION P3S (3 semaines à venir)
+7. RISQUES & BLOCAGES
+8. ACTIONS À SUIVRE
+   Quoi | Qui | Échéance
+   --------------------------------
+   [action] | [responsable] | [date]
+9. POINTS À REMONTER AUX DIRECTEURS
+
+Langage direct et professionnel. Omets les sections sans données. Si NC : formule toujours une action corrective concrète avec responsable.`;
+
+  try {
+    const text = await callClaude(system, buildContext() + '\n\nGénère le compte-rendu complet.');
+    document.getElementById('output-text').textContent = text;
+    document.getElementById('output-area').style.display = '';
+    window._report = text;
+    window._projNom = getF('proj_nom') || 'chantier';
+    btn.innerHTML = '✦ Regénérer';
+    btn.disabled = false;
+  } catch(e) {
+    showBanner('gen-banner', 'err', 'Erreur : ' + e.message);
+    btn.innerHTML = '✦ Générer avec Claude';
+    btn.disabled = false;
+  }
+}
+
+function copyReport() {
+  if (window._report) navigator.clipboard.writeText(window._report).then(() => {
+    const btn = event.target;
+    btn.textContent = '✓ Copié';
+    setTimeout(() => btn.textContent = 'Copier', 2000);
+  });
+}
+
+function downloadReport() {
+  if (!window._report) return;
+  const blob = new Blob([window._report], { type: 'text/plain;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'revue-' + (window._projNom || 'chantier').replace(/\s+/g, '-') + '-' + new Date().toISOString().slice(0,10) + '.txt';
+  a.click();
+}
+
+// Init
+document.getElementById('proj_date').valueAsDate = new Date();
+const savedKey = localStorage.getItem('anthropic-key');
+if (savedKey) {
+  document.getElementById('api-key').value = savedKey;
+  document.getElementById('api-key-t').value = savedKey;
+}
+
+// PWA
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>
